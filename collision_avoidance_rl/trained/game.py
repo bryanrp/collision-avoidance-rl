@@ -13,7 +13,7 @@ Point = namedtuple('Point', 'x, y')
 # pygame
 W = 640
 H = 480
-TICK = 2000
+TICK = 40
 
 # rgb colors
 WHITE = (255, 255, 255)
@@ -67,10 +67,9 @@ class AGameAI:
             self._place_food()
         
     def play_step(self, action):
+        collides = False
         self.frame_iteration += 1
         self.food_iteration += 1
-        collides = False
-        reward = 0
 
         # 1. collect user input
         for event in pygame.event.get():
@@ -79,22 +78,17 @@ class AGameAI:
                 quit()
         
         # 2. move
-        prev_dist = distance(self.player, self.food)
         self._move(action)
-        after_dist = distance(self.player, self.food)
-        reward = prev_dist - after_dist
         
         # 3. check if game over
         game_over = False
         if self._is_collision() or self.food_iteration > FOOD_LIMIT:
             game_over = True
-            reward = -1000
-            return collides, reward, game_over, self.score
+            return collides, game_over, self.score
             
         # 4. place new food or just move
         if collide(self.player, self.food):
             self.score += 1
-            reward = 20
             self._place_food()
 
         # 5. spawn a new obstacle
@@ -157,7 +151,6 @@ class AGameAI:
         for ob in self.obs:
             if (collide(self.player, ob[1], PLAYER_RADIUS + OBS_RADIUS)):
                 collides = True
-                reward = -500
                 break
 
         # 7. update ui and clock
@@ -165,7 +158,7 @@ class AGameAI:
         self.clock.tick(TICK)
 
         # 8. return game over and score
-        return collides, reward, game_over, self.score
+        return collides, game_over, self.score
     
     def _is_collision(self):
         # hits boundary
