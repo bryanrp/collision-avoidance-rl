@@ -23,3 +23,12 @@ Play game (old version)
 ```
 python human/game.py
 ```
+
+## Without poetry
+
+These are the packages used
+- pygame = "^2.5.2"
+- torch = "^2.2.2"
+- torchvision = "^0.17.2"
+- matplotlib = "^3.8.4"
+- ipython = "^8.23.0"
