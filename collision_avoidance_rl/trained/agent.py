@@ -102,7 +102,7 @@ def train():
         collides, done, score = game.play_step(final_move)
 
         # check if collided
-        if not(done) and collides < 0: collisions += 1
+        if collides: collisions += 1
 
         if done:
             # train long memory, plot result

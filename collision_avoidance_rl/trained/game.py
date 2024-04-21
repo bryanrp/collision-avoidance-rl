@@ -40,7 +40,7 @@ class AGameAI:
         self.h = H
         # init display
         self.display = pygame.display.set_mode((self.w, self.h))
-        pygame.display.set_caption('Snake')
+        pygame.display.set_caption('Collision Avoidance')
         self.clock = pygame.time.Clock()
         self.reset()
 
