@@ -3,7 +3,7 @@ import random
 import math
 import numpy as np
 from collections import deque
-from game import AGameAI, PLAYER_RADIUS, OBS_RADIUS, W, H
+from game import AGameAI, PLAYER_RADIUS, OBS_RADIUS, PLAYER_SENSOR, W, H
 from collision_avoidance_rl import utils
 from collision_avoidance_rl.train.model import Linear_QNet, QTrainer
 from collision_avoidance_rl.helper import plot
@@ -11,9 +11,6 @@ from collision_avoidance_rl.helper import plot
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
-
-SENSOR_RADIUS = 3 * (PLAYER_RADIUS + OBS_RADIUS)
-BORDER_RADIUS = 3 * (2 * PLAYER_RADIUS)
 
 class Agent:
 
@@ -40,7 +37,7 @@ class Agent:
         obs_down = 0
         for ob in game.obs:
             pos = ob[1]
-            if utils.collide(player, pos, SENSOR_RADIUS):
+            if utils.collide(player, pos, PLAYER_SENSOR):
                 dx = pos.x - player.x
                 dy = pos.y - player.y
                 if utils.collide(player, pos, PLAYER_RADIUS + OBS_RADIUS):
@@ -49,7 +46,7 @@ class Agent:
                     obs_up = max(obs_up, 1 if dy <= 0 else 0)
                     obs_down = max(obs_down, 1 if dy > 0 else 0)
                 else:
-                    val = 1 - (utils.distance(pos, player) - PLAYER_RADIUS - OBS_RADIUS) / (SENSOR_RADIUS - PLAYER_RADIUS - OBS_RADIUS)
+                    val = 1 - (utils.distance(pos, player) - PLAYER_RADIUS - OBS_RADIUS) / (PLAYER_SENSOR - PLAYER_RADIUS - OBS_RADIUS)
                     degrees = utils.calculate_angle(dx, dy)
                     if 315 <= degrees and degrees < 45:
                         obs_right = max(obs_right, val)
@@ -65,14 +62,14 @@ class Agent:
         bor_right = 0
         bor_up = 0
         bor_down = 0
-        if player.x < BORDER_RADIUS:
-            bor_left = 1 - player.x / BORDER_RADIUS
-        if player.y < BORDER_RADIUS:
-            bor_up = 1 - player.y / BORDER_RADIUS
-        if W - player.x < BORDER_RADIUS:
-            bor_right = 1 - (W - player.x) / BORDER_RADIUS
-        if H - player.y < BORDER_RADIUS:
-            bor_down = 1 - (H - player.y) / BORDER_RADIUS
+        if player.x < PLAYER_SENSOR:
+            bor_left = 1 - player.x / PLAYER_SENSOR
+        if player.y < PLAYER_SENSOR:
+            bor_up = 1 - player.y / PLAYER_SENSOR
+        if W - player.x < PLAYER_SENSOR:
+            bor_right = 1 - (W - player.x) / PLAYER_SENSOR
+        if H - player.y < PLAYER_SENSOR:
+            bor_down = 1 - (H - player.y) / PLAYER_SENSOR
         state_bor = [bor_left, bor_right, bor_up, bor_down]
 
         return np.concatenate((state_dir, state_obs, state_bor))

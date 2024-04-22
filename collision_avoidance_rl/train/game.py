@@ -2,7 +2,7 @@ import pygame
 import random
 import math
 from collections import namedtuple
-from collision_avoidance_rl.utils import distance, collide, generate_random_2d_vector
+from collision_avoidance_rl.utils import distance, collide, generate_random_2d_vector, calculate_angle
 
 pygame.init()
 # font = pygame.font.Font('arial.ttf', 25)
@@ -25,6 +25,7 @@ BLACK = (0,0,0)
 FOOD_RADIUS = 10
 PLAYER_RADIUS = 15
 PLAYER_SPEED = 10
+PLAYER_SENSOR = 3 * (2 * PLAYER_RADIUS)
 OBS_RADIUS = 15
 OBS_SPEED = 5
 
@@ -59,8 +60,8 @@ class AGameAI:
         self.next_spawn_iteration = self.frame_iteration + random.randint(SPAWN_MIN, SPAWN_MAX)
         
     def _place_food(self):
-        x = random.randint(0 + 2 * PLAYER_RADIUS, self.w - 2 * PLAYER_RADIUS)
-        y = random.randint(0 + 2 * PLAYER_RADIUS, self.h - 2 * PLAYER_RADIUS)
+        x = random.randint(0 + PLAYER_SENSOR, self.w - PLAYER_SENSOR)
+        y = random.randint(0 + PLAYER_SENSOR, self.h - PLAYER_SENSOR)
         self.food = Point(x, y)
         self.food_iteration = 0
         if collide(self.player, self.food):
@@ -90,11 +91,20 @@ class AGameAI:
             game_over = True
             reward = -1000
             return collides, reward, game_over, self.score
+        else:
+            if self.player.x < PLAYER_SENSOR:
+                reward -= 250 * (1 - self.player.x / PLAYER_SENSOR)
+            if self.player.y < PLAYER_SENSOR:
+                reward -= 250 * (1 - self.player.y / PLAYER_SENSOR)
+            if W - self.player.x < PLAYER_SENSOR:
+                reward -= 250 * (1 - (W - self.player.x) / PLAYER_SENSOR)
+            if H - self.player.y < PLAYER_SENSOR:
+                reward -= 250 * (1 - (H - self.player.y) / PLAYER_SENSOR)
             
         # 4. place new food or just move
         if collide(self.player, self.food):
             self.score += 1
-            reward = 20
+            reward += 20
             self._place_food()
 
         # 5. spawn a new obstacle
@@ -153,12 +163,35 @@ class AGameAI:
             next_obs.append([ob[0], next_pos])
         self.obs = next_obs
 
-        # 7. check obstacles collision
+        # 7. check obstacles sensor and collision
+        reward_up = 0
+        reward_down = 0
+        reward_left = 0
+        reward_right = 0
         for ob in self.obs:
-            if (collide(self.player, ob[1], PLAYER_RADIUS + OBS_RADIUS)):
-                collides = True
-                reward = -500
-                break
+            if collide(self.player, ob[1], PLAYER_SENSOR):
+                dx = ob[1].x - self.player.x
+                dy = ob[1].y - self.player.y
+                if (collide(self.player, ob[1], PLAYER_RADIUS + OBS_RADIUS)):
+                    collides = True
+                    reward_up = 125
+                    reward_down = 125
+                    reward_left = 125
+                    reward_right = 125
+                    break
+                else:
+                    val = 1 - (distance(ob[1], self.player) - PLAYER_RADIUS - OBS_RADIUS) / (PLAYER_SENSOR - PLAYER_RADIUS - OBS_RADIUS)
+                    val *= 125
+                    degrees = calculate_angle(dx, dy)
+                    if 315 <= degrees and degrees < 45:
+                        reward_right = max(reward_right, val)
+                    elif degrees < 135:
+                        reward_down = max(reward_down, val) # pygame Y coordinate is upside-down
+                    elif degrees < 225:
+                        reward_left = max(reward_left, val)
+                    else:
+                        reward_up = max(reward_up, val) # pygame Y coordinate is upside-down
+        reward -= (reward_up + reward_down + reward_left + reward_right)
 
         # 7. update ui and clock
         self._update_ui()

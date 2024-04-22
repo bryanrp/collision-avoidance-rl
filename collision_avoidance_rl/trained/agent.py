@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from game import AGameAI, PLAYER_RADIUS, OBS_RADIUS, W, H
+from game import AGameAI, PLAYER_SENSOR, PLAYER_RADIUS, OBS_RADIUS, W, H
 from collision_avoidance_rl import utils
 from collision_avoidance_rl.helper import plot
 from model import Trained_Model
@@ -8,9 +8,6 @@ from model import Trained_Model
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
-
-SENSOR_RADIUS = 3 * (PLAYER_RADIUS + OBS_RADIUS)
-BORDER_RADIUS = 3 * (2 * PLAYER_RADIUS)
 
 class Agent:
 
@@ -35,39 +32,39 @@ class Agent:
         obs_down = 0
         for ob in game.obs:
             pos = ob[1]
-            if utils.collide(player, pos, SENSOR_RADIUS):
+            if utils.collide(player, pos, PLAYER_SENSOR):
+                dx = pos.x - player.x
+                dy = pos.y - player.y
                 if utils.collide(player, pos, PLAYER_RADIUS + OBS_RADIUS):
-                    obs_left = 1
-                    obs_right = 1
-                    obs_up = 1
-                    obs_down = 1
+                    obs_left = max(obs_left, 1 if dx <= 0 else 0)
+                    obs_right = max(obs_right, 1 if dx > 0 else 0)
+                    obs_up = max(obs_up, 1 if dy <= 0 else 0)
+                    obs_down = max(obs_down, 1 if dy > 0 else 0)
                 else:
-                    dx = pos.x - player.x
-                    dy = pos.y - player.y
-                    val = utils.distance(pos, player) / SENSOR_RADIUS
+                    val = 1 - (utils.distance(pos, player) - PLAYER_RADIUS - OBS_RADIUS) / (PLAYER_SENSOR - PLAYER_RADIUS - OBS_RADIUS)
                     degrees = utils.calculate_angle(dx, dy)
                     if 315 <= degrees and degrees < 45:
-                        obs_right = val
+                        obs_right = max(obs_right, val)
                     elif degrees < 135:
-                        obs_down = val # pygame Y coordinate is upside-down
+                        obs_down = max(obs_down, val) # pygame Y coordinate is upside-down
                     elif degrees < 225:
-                        obs_left = val
+                        obs_left = max(obs_left, val)
                     else:
-                        obs_up = val # pygame Y coordinate is upside-down
+                        obs_up = max(obs_up, val) # pygame Y coordinate is upside-down
         state_obs = [obs_left, obs_right, obs_up, obs_down]
 
         bor_left = 0
         bor_right = 0
         bor_up = 0
         bor_down = 0
-        if player.x < BORDER_RADIUS:
-            bor_left = player.x / BORDER_RADIUS
-        if player.y < BORDER_RADIUS:
-            bor_up = player.y / BORDER_RADIUS
-        if W - player.x < BORDER_RADIUS:
-            bor_right = (W - player.x) / BORDER_RADIUS
-        if H - player.y < BORDER_RADIUS:
-            bor_down = (H - player.y) / BORDER_RADIUS
+        if player.x < PLAYER_SENSOR:
+            bor_left = 1 - player.x / PLAYER_SENSOR
+        if player.y < PLAYER_SENSOR:
+            bor_up = 1 - player.y / PLAYER_SENSOR
+        if W - player.x < PLAYER_SENSOR:
+            bor_right = 1 - (W - player.x) / PLAYER_SENSOR
+        if H - player.y < PLAYER_SENSOR:
+            bor_down = 1 - (H - player.y) / PLAYER_SENSOR
         state_bor = [bor_left, bor_right, bor_up, bor_down]
 
         return np.concatenate((state_dir, state_obs, state_bor))

@@ -25,6 +25,7 @@ BLACK = (0,0,0)
 FOOD_RADIUS = 10
 PLAYER_RADIUS = 15
 PLAYER_SPEED = 10
+PLAYER_SENSOR = 3 * (2 * PLAYER_RADIUS)
 OBS_RADIUS = 15
 OBS_SPEED = 5
 
@@ -59,8 +60,8 @@ class AGameAI:
         self.next_spawn_iteration = self.frame_iteration + random.randint(SPAWN_MIN, SPAWN_MAX)
         
     def _place_food(self):
-        x = random.randint(0 + 2 * PLAYER_RADIUS, self.w - 2 * PLAYER_RADIUS)
-        y = random.randint(0 + 2 * PLAYER_RADIUS, self.h - 2 * PLAYER_RADIUS)
+        x = random.randint(0 + PLAYER_SENSOR, self.w - PLAYER_SENSOR)
+        y = random.randint(0 + PLAYER_SENSOR, self.h - PLAYER_SENSOR)
         self.food = Point(x, y)
         self.food_iteration = 0
         if collide(self.player, self.food):
