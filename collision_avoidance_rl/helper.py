@@ -1,21 +1,27 @@
 import matplotlib.pyplot as plt
 from IPython import display
 
-plt.ion()
+def plot(scores, mean_scores, collisions, mean_collisions):
+    plt.clf()  # Clear the current figure
 
-def plot(scores, mean_scores, collisions):
-    display.clear_output(wait=True)
-    display.display(plt.gcf())
-    plt.clf()
-    plt.title('Training...')
+    plt.subplot(2, 1, 1)
     plt.xlabel('Number of Games')
     plt.ylabel('Score')
-    plt.plot(scores)
-    plt.plot(mean_scores)
-    plt.plot(collisions)
-    plt.ylim(0, 200)
+    plt.plot(scores, label='Score')
+    plt.plot(mean_scores, label='Mean Score')
+    plt.legend()  # Show legend
     plt.text(len(scores)-1, scores[-1], str(scores[-1]))
     plt.text(len(mean_scores)-1, mean_scores[-1], str(mean_scores[-1]))
+
+    plt.subplot(2, 1, 2)
+    plt.xlabel('Number of Games')
+    plt.ylabel('Collisions')
+    plt.plot(collisions, label='Collisions')
+    plt.plot(mean_collisions, label='Mean Collisions')
+    plt.legend()  # Show legend
     plt.text(len(collisions)-1, collisions[-1], str(collisions[-1]))
-    plt.show(block=False)
-    plt.pause(.1)
+    plt.text(len(mean_collisions)-1, mean_collisions[-1], str(mean_collisions[-1]))
+
+    plt.tight_layout()  # Adjust layout to prevent overlap
+    plt.pause(0.1)  # Pause to update the plot
+    return

@@ -44,21 +44,21 @@ class Agent:
                 dx = pos.x - player.x
                 dy = pos.y - player.y
                 if utils.collide(player, pos, PLAYER_RADIUS + OBS_RADIUS):
-                    obs_left = 1 if dx <= 0 else 0
-                    obs_right = 1 if dx > 0 else 0
-                    obs_up = 1 if dy <= 0 else 0
-                    obs_down = 1 if dy > 0 else 0
+                    obs_left = max(obs_left, 1 if dx <= 0 else 0)
+                    obs_right = max(obs_right, 1 if dx > 0 else 0)
+                    obs_up = max(obs_up, 1 if dy <= 0 else 0)
+                    obs_down = max(obs_down, 1 if dy > 0 else 0)
                 else:
                     val = 1 - (utils.distance(pos, player) - PLAYER_RADIUS - OBS_RADIUS) / (SENSOR_RADIUS - PLAYER_RADIUS - OBS_RADIUS)
                     degrees = utils.calculate_angle(dx, dy)
                     if 315 <= degrees and degrees < 45:
-                        obs_right = val
+                        obs_right = max(obs_right, val)
                     elif degrees < 135:
-                        obs_down = val # pygame Y coordinate is upside-down
+                        obs_down = max(obs_down, val) # pygame Y coordinate is upside-down
                     elif degrees < 225:
-                        obs_left = val
+                        obs_left = max(obs_left, val)
                     else:
-                        obs_up = val # pygame Y coordinate is upside-down
+                        obs_up = max(obs_up, val) # pygame Y coordinate is upside-down
         state_obs = [obs_left, obs_right, obs_up, obs_down]
 
         bor_left = 0
@@ -66,13 +66,13 @@ class Agent:
         bor_up = 0
         bor_down = 0
         if player.x < BORDER_RADIUS:
-            bor_left = player.x / BORDER_RADIUS
+            bor_left = 1 - player.x / BORDER_RADIUS
         if player.y < BORDER_RADIUS:
-            bor_up = player.y / BORDER_RADIUS
+            bor_up = 1 - player.y / BORDER_RADIUS
         if W - player.x < BORDER_RADIUS:
-            bor_right = (W - player.x) / BORDER_RADIUS
+            bor_right = 1 - (W - player.x) / BORDER_RADIUS
         if H - player.y < BORDER_RADIUS:
-            bor_down = (H - player.y) / BORDER_RADIUS
+            bor_down = 1 - (H - player.y) / BORDER_RADIUS
         state_bor = [bor_left, bor_right, bor_up, bor_down]
 
         return np.concatenate((state_dir, state_obs, state_bor))
@@ -112,9 +112,11 @@ class Agent:
 
 def train():
     plot_collisions = []
+    plot_mean_collisions = []
     plot_scores = []
     plot_mean_scores = []
     collisions = 0
+    total_collisions = 0
     total_score = 0
     record = 0
     agent = Agent()
@@ -152,13 +154,15 @@ def train():
             print('Game', agent.n_games, 'Score', score, 'Record:', record, 'Collisions:', collisions)
 
             plot_collisions.append(collisions)
+            total_collisions += collisions
+            plot_mean_collisions.append(total_collisions / agent.n_games)
             collisions = 0
 
             plot_scores.append(score)
             total_score += score
             mean_score = total_score / agent.n_games
             plot_mean_scores.append(mean_score)
-            plot(plot_scores, plot_mean_scores, plot_collisions)
+            plot(plot_scores, plot_mean_scores, plot_collisions, plot_mean_collisions)
 
 
 if __name__ == '__main__':

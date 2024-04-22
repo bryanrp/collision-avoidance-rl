@@ -84,9 +84,11 @@ class Agent:
 
 def train():
     plot_collisions = []
+    plot_mean_collisions = []
     plot_scores = []
     plot_mean_scores = []
     collisions = 0
+    total_collisions = 0
     total_score = 0
     record = 0
     agent = Agent()
@@ -115,6 +117,8 @@ def train():
             print('Game', agent.n_games, 'Score', score, 'Record:', record, 'Collisions:', collisions)
 
             plot_collisions.append(collisions)
+            total_collisions += collisions
+            plot_mean_collisions.append(total_collisions / agent.n_games)
             collisions = 0
 
             plot_scores.append(score)
